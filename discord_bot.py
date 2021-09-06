@@ -1,4 +1,5 @@
 import discord
+from discord.embeds import Embed
 import env
 import math
 import datetime
@@ -84,17 +85,26 @@ for i, countEmoji in enumerate(mylist.count):
 	emojiCount[i] = countEmoji
 	
 
+reactionContent = {}
+
+
+
+
 @client.event
 async def on_reaction_add(reaction, user):
 	global message_id
 	global emojiCount
 	global finalCount
+	global reactionContent
 	if reaction.message.id == message_id:
 		for i in emojiCount:
 			if reaction.emoji == emojiCount[i]:
 				finalCount[i] = reaction.count
+				if not user.bot:
+					reactionContent.setdefault(user.name, []).append(reaction.emoji)
+
 			
-			
+		
 
 
 @client.event
@@ -106,14 +116,14 @@ async def on_ready():
 @client.event
 async def on_message(message):
 
-
+	global reactionContent
 
 	if message.author.bot:
 		return
 
 	command = mylist.command
 
-	if message.content.startswith(command[0]) or message.content.startswith(command[1]) and not message.content.startswith(command[2]):
+	if message.content.startswith(command[0]) or message.content.startswith(command[1]) and not message.content.startswith(command[2]) and not message.content.startswith(command[3]):
 		l = message.content.split()
 		await vote(message, l)
 	
@@ -133,6 +143,17 @@ async def on_message(message):
 
 		voteMax = int(l[1])
 		await message.channel.send("投票最大数を%sに変更しました" % voteMax)
+
+
+	if message.content.startswith(command[3]):
+
+		emb = discord.Embed(title = "前回の投票先")
+		print(reactionContent.keys())
+		print(reactionContent.values())
+		for user in reactionContent.keys():
+				emb.add_field(name = reactionContent.keys()[user], value = reactionContent.values()[user])
+		await message.channel.send(embed = emb)
+
 
 
 
