@@ -148,10 +148,8 @@ async def on_message(message):
 	if message.content.startswith(command[3]):
 
 		emb = discord.Embed(title = "前回の投票先")
-		print(reactionContent.keys())
-		print(reactionContent.values())
 		for user in reactionContent.keys():
-				emb.add_field(name = reactionContent.keys()[user], value = reactionContent.values()[user])
+				emb.add_field(name = user, value = reactionContent[user])
 		await message.channel.send(embed = emb)
 
 
