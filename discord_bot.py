@@ -1,5 +1,6 @@
 import discord
 from discord.embeds import Embed
+from discord.flags import Intents
 import env
 import math
 import datetime
@@ -8,18 +9,25 @@ import mylist
 from discord import reaction
 from discord.utils import get
 
+intents = discord.Intents.all()
+
 # env.pyというファイルを作ってなかにtoken = "YOUR TOKEN"としてください
 message_id = None
 
 voteMax = 5
 
-client = discord.Client()
+client = discord.Client(intents = intents)
 
 # 以下投票コマンド selectはリストだ！！！
 async def vote(message, select):
 
 	global finalCount
+	global reactionContent
 	global voteMax
+
+	finalCount = {}
+	reactionContent = {}
+
 	await message.delete(delay = 3)
 	
 
@@ -69,19 +77,32 @@ async def vote_result(message):
 	select = message.content.split()
 	title = select[1]
 	emb = discord.Embed(title = "投票結果:" + str(title))
-	
 	for i in finalCount:
 		emb.add_field(name = select[i + 3] , value = int(finalCount[i]) - 1)
 	
 	await message.channel.send(embed = emb)
 
 
+async def whichVote(message):
+
+	global reactionContent
+
+	emb = discord.Embed(title = "前回の投票先")
+	for user in reactionContent.keys():
+
+		reactionContent[user] = list(set(reactionContent[user]))
+
+		emb.add_field(name = user, value = sorted(reactionContent[user], key= lambda i: mylist.countOrder.get(i, float("inf"))))
+
+
+	await message.channel.send(embed = emb)
 
 
 emojiCount = {}
 finalCount = {}
 
 for i, countEmoji in enumerate(mylist.count):
+
 	emojiCount[i] = countEmoji
 	
 
@@ -97,12 +118,38 @@ async def on_reaction_add(reaction, user):
 	global finalCount
 	global reactionContent
 	if reaction.message.id == message_id:
+		
+
 		for i in emojiCount:
+
+
 			if reaction.emoji == emojiCount[i]:
+
 				finalCount[i] = reaction.count
+				
 				if not user.bot:
+
 					reactionContent.setdefault(user.name, []).append(reaction.emoji)
 
+
+
+
+@client.event
+async def on_reaction_remove(reaction, user):
+	if reaction.message.id == message_id:
+
+		if not user.bot:
+
+			for i in emojiCount:
+
+
+				if reaction.emoji == emojiCount[i]:
+
+					finalCount[i] = reaction.count
+					print(finalCount)
+					
+					reactionContent[user.name].remove(reaction.emoji)
+			
 			
 		
 
@@ -115,7 +162,6 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-
 	global reactionContent
 
 	if message.author.bot:
@@ -123,7 +169,7 @@ async def on_message(message):
 
 	command = mylist.command
 
-	if message.content.startswith(command[0]) or message.content.startswith(command[1]) and not message.content.startswith(command[2]) and not message.content.startswith(command[3]):
+	if message.content.split()[0] == command[0] or message.content.split()[0] == command[1]:
 		l = message.content.split()
 		await vote(message, l)
 	
@@ -147,10 +193,7 @@ async def on_message(message):
 
 	if message.content.startswith(command[3]):
 
-		emb = discord.Embed(title = "前回の投票先")
-		for user in reactionContent.keys():
-				emb.add_field(name = user, value = reactionContent[user])
-		await message.channel.send(embed = emb)
+		await whichVote(message)
 
 
 
