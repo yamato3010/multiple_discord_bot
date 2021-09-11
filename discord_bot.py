@@ -6,6 +6,7 @@ import math
 import datetime
 import time
 import mylist
+import lang
 from discord import reaction
 from discord.utils import get
 
@@ -13,8 +14,8 @@ intents = discord.Intents.all()
 
 # env.pyというファイルを作ってなかにtoken = "YOUR TOKEN"としてください
 message_id = None
-
 voteMax = 5
+text = lang.ja
 
 client = discord.Client(intents = intents)
 
@@ -33,8 +34,8 @@ async def vote(message, select):
 
 
 	if len(select) > voteMax + 3:
-		await message.channel.send("選択肢は%s以下にしてください！" % voteMax)
-		return
+		await message.channel.send(text["attention_choices"] % voteMax)
+		return False
 
 
 	emb = discord.Embed(title = select[1])
@@ -44,14 +45,14 @@ async def vote(message, select):
 	if vote_time < 60:
 		dt1 = dt + datetime.timedelta(minutes=vote_time)
 		dt1 = dt.replace(microsecond = 0)
-		emb.set_footer(text = "この投票は" + str(dt1) + "に終了します(" + str(vote_time) + "分後)")
+		emb.set_footer(text = text["this_vote"] + str(dt1) + text["is_end"] + str(vote_time) + text["after_min"])
 
 	elif vote_time >= 60:
 		h = math.floor(vote_time / 60)
 		m = vote_time % 60
 		dt1 = dt + datetime.timedelta(hours=h, minutes=m)
 		dt1 = dt.replace(microsecond = 0)
-		emb.set_footer(text = "この投票は" + str(dt1) + "に終了します(" + str(h) + "時間" + str(m) + "分後)")
+		emb.set_footer(text = text["this_vote"] + str(dt1) + text["is_end"] + str(h) + text["after_hr"] + str(m) + text["after_min"])
 
 	for i in range(3):
 
@@ -87,7 +88,7 @@ async def vote(message, select):
 async def vote_result(message):
 	select = message.content.split()
 	title = select[1]
-	emb = discord.Embed(title = "投票結果:" + str(title))
+	emb = discord.Embed(title = text["result"] + str(title))
 	for i in finalCount:
 		emb.add_field(name = select[i + 3] , value = int(finalCount[i]) - 1)
 	
@@ -96,14 +97,14 @@ async def vote_result(message):
 async def vote_result_yon(message): # 選択肢が一つ股はない時の結果表示
 	select = message.content.split()
 	title = select[1]
-	txt = ["賛同", "否定"]
+	txt = [text["agree"], text["disagree"]]
 	
 	if len(select) == 4: # もし選択肢が一つあったら
 		subTitle = select[3]
-		emb = discord.Embed(title = "投票結果:" + str(title), description=str(subTitle))
+		emb = discord.Embed(title = text["result"] + str(title), description=str(subTitle))
 
 	else:
-		emb = discord.Embed(title = "投票結果:" + str(title))
+		emb = discord.Embed(title = text["result"] + str(title))
 
 	for i in finalCount_yor:
 		emb.add_field(name = txt[i] , value = int(finalCount_yor[i]) - 1)
@@ -115,7 +116,7 @@ async def whichVote(message):
 
 	global reactionContent
 
-	emb = discord.Embed(title = "投票先")
+	emb = discord.Embed(title = text["vote_to"])
 	for user in reactionContent.keys():
 
 		reactionContent[user] = list(set(reactionContent[user]))
@@ -209,6 +210,7 @@ async def on_ready():
 @client.event
 async def on_message(message):
 	global reactionContent
+	global text
 
 	if message.author.bot:
 		return
@@ -217,17 +219,19 @@ async def on_message(message):
 
 	if message.content.split()[0] == command[0] or message.content.split()[0] == command[1]:
 		l = message.content.split()
-		await vote(message, l)
+		vote_error = await vote(message, l)
+		if vote_error == False:
+			return
 		await whichVote(message)
 	
 	if message.content.startswith(command[2]):
 		vmax = message.content.split()[1]
 		if not str.isdecimal(vmax):
-			await message.channel.send("%sは数字ではありません\n10以下の自然数を入力してください！" % vmax)
+			await message.channel.send(text["attention_int"] % vmax)
 			return
 
 		if int(vmax) > 11:
-			await message.channel.send("投票最大値は10以下にしてくださいｗ")
+			await message.channel.send(text["attention_max"])
 			return
 
 		global voteMax
@@ -235,18 +239,24 @@ async def on_message(message):
 		l = message.content.split()
 
 		voteMax = int(l[1])
-		await message.channel.send("投票最大数を%sに変更しました" % voteMax)
+		await message.channel.send(text["change_max"] % voteMax)
 
 
 	if message.content.startswith(command[3]):
 
 		await whichVote(message)
+	
+	if message.content.startswith(command[4]):
+		language = message.content.split()[1]
 
+		if language == "ja":
+			text = lang.ja
+			await message.channel.send(text["change_lang"] % language)
+		elif language == "en":
+			text = lang.en
+			await message.channel.send(text["change_lang"] % language)
+		else:
+			await message.channel.send(text["error_lang"])
 
-
-
-
-
-		
 		
 client.run(env.token)

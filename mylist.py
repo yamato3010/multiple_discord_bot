@@ -16,7 +16,7 @@ count = [
 
 yon = ["✅", "❎"]
 
-command = ["/vote", "/v", "/vmax", "/vget"]
+command = ["/vote", "/v", "/vmax", "/vget", "/lang"]
 
 
 countOrder = {
