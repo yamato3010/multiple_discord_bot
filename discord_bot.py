@@ -35,7 +35,8 @@ async def vote(message, select):
 	if len(select) > voteMax + 3:
 		await message.channel.send("選択肢は%s以下にしてください！" % voteMax)
 		return
-	
+
+
 	emb = discord.Embed(title = select[1])
 	vote_time = int(select[2])
 	
@@ -64,6 +65,16 @@ async def vote(message, select):
 	global message_id
 	message_id = vote_message.id
 	
+	# もし選択肢が一つ以下だったらyes or no ここから
+	if len(select) <= 1:
+		for i in range(2):
+			await vote_message.add_reaction(mylist.yon[i])
+		time.sleep(vote_time) # 一時停止
+		await vote_message.delete()
+		print("投票タイム終了") # 終了
+		return await vote_result_yon(message)
+	# ここまで
+
 	for i ,item in enumerate(select):
 		await vote_message.add_reaction(mylist.count[i])
 	
@@ -79,6 +90,23 @@ async def vote_result(message):
 	emb = discord.Embed(title = "投票結果:" + str(title))
 	for i in finalCount:
 		emb.add_field(name = select[i + 3] , value = int(finalCount[i]) - 1)
+	
+	await message.channel.send(embed = emb)
+
+async def vote_result_yon(message): # 選択肢が一つ股はない時の結果表示
+	select = message.content.split()
+	title = select[1]
+	txt = ["賛同", "否定"]
+	
+	if len(select) == 4: # もし選択肢が一つあったら
+		subTitle = select[3]
+		emb = discord.Embed(title = "投票結果:" + str(title), description=str(subTitle))
+
+	else:
+		emb = discord.Embed(title = "投票結果:" + str(title))
+
+	for i in finalCount_yor:
+		emb.add_field(name = txt[i] , value = int(finalCount_yor[i]) - 1)
 	
 	await message.channel.send(embed = emb)
 
@@ -100,11 +128,16 @@ async def whichVote(message):
 
 emojiCount = {}
 finalCount = {}
+emojiCount_yon = {}
+finalCount_yor = {}
 
 for i, countEmoji in enumerate(mylist.count):
 
 	emojiCount[i] = countEmoji
 	
+for i, countEmoji_yon in enumerate(mylist.yon):
+
+	emojiCount_yon[i] = countEmoji_yon
 
 reactionContent = {}
 
@@ -115,13 +148,27 @@ reactionContent = {}
 async def on_reaction_add(reaction, user):
 	global message_id
 	global emojiCount
+	global emojiCount_yon
 	global finalCount
+	global finalCount_yor
 	global reactionContent
+
 	if reaction.message.id == message_id:
-		
+
+		if reaction.emoji == "✅" or reaction.emoji == "❎": # 選択肢が一つの時の場合
+			
+			for i in emojiCount_yon:
+
+				if reaction.emoji == emojiCount_yon[i]:
+
+					finalCount_yor[i] = reaction.count
+					
+					if not user.bot:
+
+						reactionContent.setdefault(user.name, []).append(reaction.emoji)
+
 
 		for i in emojiCount:
-
 
 			if reaction.emoji == emojiCount[i]:
 
@@ -141,7 +188,6 @@ async def on_reaction_remove(reaction, user):
 		if not user.bot:
 
 			for i in emojiCount:
-
 
 				if reaction.emoji == emojiCount[i]:
 
