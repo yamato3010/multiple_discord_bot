@@ -87,7 +87,7 @@ async def whichVote(message):
 
 	global reactionContent
 
-	emb = discord.Embed(title = "前回の投票先")
+	emb = discord.Embed(title = "投票先")
 	for user in reactionContent.keys():
 
 		reactionContent[user] = list(set(reactionContent[user]))
@@ -172,6 +172,7 @@ async def on_message(message):
 	if message.content.split()[0] == command[0] or message.content.split()[0] == command[1]:
 		l = message.content.split()
 		await vote(message, l)
+		await whichVote(message)
 	
 	if message.content.startswith(command[2]):
 		vmax = message.content.split()[1]
