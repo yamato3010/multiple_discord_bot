@@ -1,4 +1,4 @@
-# multiple_discord_bot
+# vote_bot
 
 PythonとGitの勉強の際に試しに作成してみたDiscord用の投票botです。
 
